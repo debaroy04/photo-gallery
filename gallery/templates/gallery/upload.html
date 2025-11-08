@@ -1,0 +1,25 @@
+{% extends 'gallery/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'gallery/css/upload.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="upload-container">
+    <h1>Upload Photos</h1>
+    <form method="post" enctype="multipart/form-data" class="upload-form">
+        {% csrf_token %}
+        <div class="file-upload">
+            <label for="id_images">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <span>Select multiple photos</span>
+            </label>
+            {{ form.images }}
+        </div>
+        <button type="submit" class="upload-btn">
+            <i class="fas fa-upload"></i> Upload
+        </button>
+    </form>
+</div>
+{% endblock %}

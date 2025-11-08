@@ -1,0 +1,123 @@
+{% extends 'gallery/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'gallery/css/gallery.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="gallery-container">
+    <h1>Moments You Captured📷</h1>
+    
+    {% if photos %}
+    <div class="photo-grid">
+        {% for photo in photos %}
+        <div class="photo-card" data-id="{{ photo.id }}">
+            <a href="{% url 'photo_detail' photo.id %}" class="photo-link">
+                <img src="{{ photo.image.url }}" alt="Photo">
+            </a>
+            <div class="photo-actions">
+                <button class="action-btn">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+                <div class="actions-menu">
+                    <a href="{% url 'photo_detail' photo.id %}" class="action-item">
+                        <i class="fas fa-expand"></i> View
+                    </a>
+                    <a href="{% url 'download_photo' photo.id %}" class="action-item">
+                        <i class="fas fa-download"></i> Download
+                    </a>
+                    <button class="action-item share-btn" data-url="{{ request.scheme }}://{{ request.get_host }}{{ photo.image.url }}">
+                        <i class="fas fa-share"></i> Share
+                    </button>
+                    <button class="action-item delete-btn" data-id="{{ photo.id }}">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-gallery">
+        <p>No photos yet. Click the + button to upload photos!</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle actions menu
+    document.querySelectorAll('.action-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const menu = this.nextElementSibling;
+            document.querySelectorAll('.actions-menu').forEach(m => {
+                if (m !== menu) m.classList.remove('show');
+            });
+            menu.classList.toggle('show');
+        });
+    });
+
+    // Close menus when clicking elsewhere
+    document.addEventListener('click', function() {
+        document.querySelectorAll('.actions-menu').forEach(menu => {
+            menu.classList.remove('show');
+        });
+    });
+
+    // Delete functionality
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const photoId = this.getAttribute('data-id');
+            if (confirm('Are you sure you want to delete this photo?')) {
+                fetch(`/photo/${photoId}/delete/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json',
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        document.querySelector(`.photo-card[data-id="${photoId}"]`).remove();
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            }
+        });
+    });
+
+    // Share functionality
+    document.querySelectorAll('.share-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const url = this.getAttribute('data-url');
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Check out this photo',
+                    url: url
+                }).catch(err => {
+                    console.log('Error sharing:', err);
+                    copyToClipboard(url);
+                });
+            } else {
+                copyToClipboard(url);
+            }
+        });
+    });
+
+    function copyToClipboard(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        alert('Link copied to clipboard!');
+    }
+});
+</script>
+{% endblock %}
